@@ -155,7 +155,7 @@ pub fn delete(
         url,
         &query_options,
     );
-    raw_put(url, query_options, &authorization)
+    raw_delete(url, query_options, &authorization)
 }
 
 fn raw_delete(url: &str, query_options: &Vec<(&str, &str)>, authorization: &str) -> Response {
@@ -169,7 +169,7 @@ fn raw_delete(url: &str, query_options: &Vec<(&str, &str)>, authorization: &str)
 pub fn multipart(
     url: &str,
     query_options: &Vec<(&str, &str)>,
-    mut data: MultiPart,
+    data: MultiPart,
     consumer_key: &str,
     consumer_secret: &str,
     access_key: &str,
