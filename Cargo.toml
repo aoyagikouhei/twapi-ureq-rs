@@ -11,8 +11,6 @@ categories = ["api-bindings"]
 readme = "Readme.md"
 documentation = "https://docs.rs/twapi-ureq"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 base64 = "^0.11"
 bytebuffer = "^0.2"
