@@ -6,6 +6,54 @@ pub fn get(url: &str, query_options: &Vec<(&str, &str)>, bearer_token: &str) -> 
     crate::raw::get(url, query_options, &authorization)
 }
 
+pub fn post(
+    url: &str,
+    query_options: &Vec<(&str, &str)>,
+    form_options: &Vec<(&str, &str)>,
+    bearer_token: &str,
+) -> Response {
+    let authorization = oauth2_authorization_header(bearer_token);
+    crate::raw::post(url, query_options, form_options, &authorization)
+}
+
+pub fn json(
+    url: &str,
+    query_options: &Vec<(&str, &str)>,
+    data: serde_json::Value,
+    bearer_token: &str,
+) -> Response {
+    let authorization = oauth2_authorization_header(bearer_token);
+    crate::raw::json(url, query_options, data, &authorization)
+}
+
+pub fn put(
+    url: &str,
+    query_options: &Vec<(&str, &str)>,
+    bearer_token: &str,
+) -> Response {
+    let authorization = oauth2_authorization_header(bearer_token);
+    crate::raw::put(url, query_options, &authorization)
+}
+
+pub fn delete(
+    url: &str,
+    query_options: &Vec<(&str, &str)>,
+    bearer_token: &str,
+) -> Response {
+    let authorization = oauth2_authorization_header(bearer_token);
+    crate::raw::delete(url, query_options, &authorization)
+}
+
+pub fn multipart(
+    url: &str,
+    query_options: &Vec<(&str, &str)>,
+    data: crate::form::MultiPart,
+    bearer_token: &str,
+) -> Response {
+    let authorization = oauth2_authorization_header(bearer_token);
+    crate::raw::multipart(url, query_options, data, &authorization)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::*;

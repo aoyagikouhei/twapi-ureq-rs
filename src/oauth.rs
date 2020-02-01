@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use twapi_oauth::{calc_oauth_header};
 use ureq::{Response};
 
@@ -14,6 +15,9 @@ pub fn get_bearer_token_response(consumer_key: &str, consumer_secret: &str) -> R
 
 pub fn get_bearer_token(consumer_key: &str, consumer_secret: &str) -> Option<String> {
     let response = get_bearer_token_response(consumer_key, consumer_secret);
+    if !response.ok() {
+        return None;
+    }
     match response.into_json() {
         Ok(json) => match json["access_token"].as_str() {
             Some(access_token) => Some(access_token.to_string()),
@@ -52,7 +56,7 @@ pub fn request_token(
     consumer_secret: &str,
     oauth_callback: &str,
     x_auth_access_type: Option<&str>,
-) -> Option<Vec<(String, String)>> {
+) -> HashMap<String, String> {
     let response = request_token_response(consumer_key, consumer_secret, oauth_callback, x_auth_access_type);
     parse_oauth_body(response)
 }
@@ -87,22 +91,27 @@ pub fn access_token(
     oauth_token: &str,
     oauth_token_secret: &str,
     oauth_verifier: &str,
-) -> Option<Vec<(String, String)>> {
+) -> HashMap<String, String> {
     let response = access_token_response(consumer_key, consumer_secret, oauth_token, oauth_token_secret, oauth_verifier);
     parse_oauth_body(response)
 }
 
-fn parse_oauth_body(response: Response) -> Option<Vec<(String, String)>> {
+fn parse_oauth_body(response: Response) -> HashMap<String, String> {
+    let mut result = HashMap::new();
     if !response.ok() {
-        return None;
+        return result;
     }
     match response.into_string() {
         Ok(body) => {
-            Some(body.split("&").map(|it| {
-                let mut pair = it.split("=");
-                (pair.next().unwrap().to_string(), pair.next().unwrap().to_string())
-            }).collect())
-        },
-        Err(_) => None,
+            for item in body.split("&") {
+                let mut pair = item.split("=");
+                result.insert(
+                    pair.next().unwrap().to_string(),
+                    pair.next().unwrap().to_string(),
+                );
+            }
+        }
+        Err(_) => {}
     }
+    result
 }
