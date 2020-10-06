@@ -1,8 +1,25 @@
 use ureq::{Request, Response};
 
+use twapi_oauth::encode;
+
+fn make_query(list: &Vec<(&str, &str)>, separator: &str) -> String {
+    let mut result = String::from("");
+    for item in list {
+        if "" != result {
+            result.push_str(separator);
+        }
+        result.push_str(&format!("{}={}", item.0, encode(item.1)));
+    }
+    result
+}
+
 pub(crate) fn get(url: &str, query_options: &Vec<(&str, &str)>, authorization: &str) -> Response {
-    let mut request = ureq::get(url).set("Authorization", authorization).build();
-    apply_query_options(&mut request, query_options);
+    let url = if query_options.len() > 0 {
+        format!("{}?{}", url, make_query(query_options, "&"))
+    } else {
+        url.to_owned()
+    };
+    let mut request = ureq::get(&url).set("Authorization", authorization).build();
     request.call()
 }
 

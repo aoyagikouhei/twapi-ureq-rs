@@ -141,6 +141,19 @@ mod tests {
         let access_key = env::var("ACCESS_KEY").unwrap();
         let access_secret = env::var("ACCESS_SECRET").unwrap();
 
+        // search
+        let url = "https://api.twitter.com/1.1/search/tweets.json";
+        let query_options = vec![("q", "*abc"), ("count", "2")];
+        let res = v1::get(
+            url,
+            &query_options,
+            &consumer_key,
+            &consumer_secret,
+            &access_key,
+            &access_secret,
+        );
+        println!("{:?}", res.into_json());
+
         // home_timeline
         let url = "https://api.twitter.com/1.1/statuses/home_timeline.json";
         let query_options = vec![("count", "2")];
@@ -153,6 +166,7 @@ mod tests {
             &access_secret,
         );
         println!("{:?}", res.into_json());
+
 
         // statuses/update
         let url = "https://api.twitter.com/1.1/statuses/update.json";
