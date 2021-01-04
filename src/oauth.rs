@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use twapi_oauth::{calc_oauth_header};
-use ureq::{Response};
+use ureq::{Response, Error};
 
-pub fn get_bearer_token_response(consumer_key: &str, consumer_secret: &str) -> Response {
+pub fn get_bearer_token_response(consumer_key: &str, consumer_secret: &str) -> Result<Response, Error> {
     let key = base64::encode(&format!("{}:{}", consumer_key, consumer_secret));
     ureq::post("https://api.twitter.com/oauth2/token")
         .set(
@@ -14,14 +14,15 @@ pub fn get_bearer_token_response(consumer_key: &str, consumer_secret: &str) -> R
 }
 
 pub fn get_bearer_token(consumer_key: &str, consumer_secret: &str) -> Option<String> {
-    let response = get_bearer_token_response(consumer_key, consumer_secret);
-    if !response.ok() {
-        return None;
-    }
-    match response.into_json() {
-        Ok(json) => match json["access_token"].as_str() {
-            Some(access_token) => Some(access_token.to_string()),
-            None => None,
+    match  get_bearer_token_response(consumer_key, consumer_secret) {
+        Ok(response) => {
+            match response.into_json::<serde_json::Value>() {
+                Ok(json) => match json["access_token"].as_str() {
+                    Some(access_token) => Some(access_token.to_string()),
+                    None => None,
+                },
+                Err(_) => None,
+            }
         },
         Err(_) => None,
     }
@@ -32,7 +33,7 @@ pub fn request_token_response(
     consumer_secret: &str,
     oauth_callback: &str,
     x_auth_access_type: Option<&str>,
-) -> Response {
+) -> Result<Response, Error> {
     let uri = "https://api.twitter.com/oauth/request_token";
     let mut header_options = vec![("oauth_callback", oauth_callback)];
     if let Some(x_auth_access_type) = x_auth_access_type {
@@ -56,9 +57,9 @@ pub fn request_token(
     consumer_secret: &str,
     oauth_callback: &str,
     x_auth_access_type: Option<&str>,
-) -> HashMap<String, String> {
-    let response = request_token_response(consumer_key, consumer_secret, oauth_callback, x_auth_access_type);
-    parse_oauth_body(response)
+) -> Result<HashMap<String, String>, Error> {
+    let response = request_token_response(consumer_key, consumer_secret, oauth_callback, x_auth_access_type)?;
+    Ok(parse_oauth_body(response))
 }
 
 pub fn access_token_response(
@@ -67,7 +68,7 @@ pub fn access_token_response(
     oauth_token: &str,
     oauth_token_secret: &str,
     oauth_verifier: &str,
-) -> Response {
+) -> Result<Response, Error> {
     let uri = "https://api.twitter.com/oauth/access_token";
     let signed = calc_oauth_header(
         &format!("{}&{}", consumer_secret, oauth_token_secret),
@@ -91,16 +92,13 @@ pub fn access_token(
     oauth_token: &str,
     oauth_token_secret: &str,
     oauth_verifier: &str,
-) -> HashMap<String, String> {
-    let response = access_token_response(consumer_key, consumer_secret, oauth_token, oauth_token_secret, oauth_verifier);
-    parse_oauth_body(response)
+) -> Result<HashMap<String, String>, Error> {
+    let response = access_token_response(consumer_key, consumer_secret, oauth_token, oauth_token_secret, oauth_verifier)?;
+    Ok(parse_oauth_body(response))
 }
 
 fn parse_oauth_body(response: Response) -> HashMap<String, String> {
     let mut result = HashMap::new();
-    if !response.ok() {
-        return result;
-    }
     match response.into_string() {
         Ok(body) => {
             for item in body.split("&") {

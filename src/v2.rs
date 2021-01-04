@@ -1,7 +1,7 @@
 use twapi_oauth::{oauth2_authorization_header};
-use ureq::{Response};
+use ureq::{Response, Error};
 
-pub fn get(url: &str, query_options: &Vec<(&str, &str)>, bearer_token: &str) -> Response {
+pub fn get(url: &str, query_options: &Vec<(&str, &str)>, bearer_token: &str) -> Result<Response, Error> {
     let authorization = oauth2_authorization_header(bearer_token);
     crate::raw::get(url, query_options, &authorization)
 }
@@ -11,7 +11,7 @@ pub fn post(
     query_options: &Vec<(&str, &str)>,
     form_options: &Vec<(&str, &str)>,
     bearer_token: &str,
-) -> Response {
+) -> Result<Response, Error> {
     let authorization = oauth2_authorization_header(bearer_token);
     crate::raw::post(url, query_options, form_options, &authorization)
 }
@@ -21,7 +21,7 @@ pub fn json(
     query_options: &Vec<(&str, &str)>,
     data: serde_json::Value,
     bearer_token: &str,
-) -> Response {
+) -> Result<Response, Error> {
     let authorization = oauth2_authorization_header(bearer_token);
     crate::raw::json(url, query_options, data, &authorization)
 }
@@ -30,7 +30,7 @@ pub fn put(
     url: &str,
     query_options: &Vec<(&str, &str)>,
     bearer_token: &str,
-) -> Response {
+) -> Result<Response, Error> {
     let authorization = oauth2_authorization_header(bearer_token);
     crate::raw::put(url, query_options, &authorization)
 }
@@ -39,7 +39,7 @@ pub fn delete(
     url: &str,
     query_options: &Vec<(&str, &str)>,
     bearer_token: &str,
-) -> Response {
+) -> Result<Response, Error> {
     let authorization = oauth2_authorization_header(bearer_token);
     crate::raw::delete(url, query_options, &authorization)
 }
@@ -49,7 +49,7 @@ pub fn multipart(
     query_options: &Vec<(&str, &str)>,
     data: crate::form::MultiPart,
     bearer_token: &str,
-) -> Response {
+) -> Result<Response, Error> {
     let authorization = oauth2_authorization_header(bearer_token);
     crate::raw::multipart(url, query_options, data, &authorization)
 }
@@ -71,6 +71,6 @@ mod tests {
             &vec![("q", "東京&埼玉"), ("count", "2")],
             &bearer_token,
         );
-        println!("{:?}", res.into_json());
+        println!("{:?}", res.into_json::<serde_json::Value>());
     }
 }

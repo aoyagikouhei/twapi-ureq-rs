@@ -1,5 +1,5 @@
 use twapi_oauth::{oauth1_authorization_header};
-use ureq::{Response};
+use ureq::{Response, Error};
 
 pub fn get(
     url: &str,
@@ -8,7 +8,7 @@ pub fn get(
     consumer_secret: &str,
     access_key: &str,
     access_secret: &str,
-) -> Response {
+) -> Result<Response, Error> {
     let authorization = oauth1_authorization_header(
         consumer_key,
         consumer_secret,
@@ -29,7 +29,7 @@ pub fn post(
     consumer_secret: &str,
     access_key: &str,
     access_secret: &str,
-) -> Response {
+) -> Result<Response, Error> {
     let mut merged_options = query_options.clone();
     for option in form_options {
         merged_options.push(*option);
@@ -54,7 +54,7 @@ pub fn json(
     consumer_secret: &str,
     access_key: &str,
     access_secret: &str,
-) -> Response {
+) -> Result<Response, Error> {
     let authorization = oauth1_authorization_header(
         consumer_key,
         consumer_secret,
@@ -74,7 +74,7 @@ pub fn put(
     consumer_secret: &str,
     access_key: &str,
     access_secret: &str,
-) -> Response {
+) -> Result<Response, Error> {
     let authorization = oauth1_authorization_header(
         consumer_key,
         consumer_secret,
@@ -94,7 +94,7 @@ pub fn delete(
     consumer_secret: &str,
     access_key: &str,
     access_secret: &str,
-) -> Response {
+) -> Result<Response, Error> {
     let authorization = oauth1_authorization_header(
         consumer_key,
         consumer_secret,
@@ -115,7 +115,7 @@ pub fn multipart(
     consumer_secret: &str,
     access_key: &str,
     access_secret: &str,
-) -> Response {
+) -> Result<Response, Error> {
     let authorization = oauth1_authorization_header(
         consumer_key,
         consumer_secret,
@@ -152,7 +152,7 @@ mod tests {
             &access_key,
             &access_secret,
         );
-        println!("{:?}", res.into_json());
+        println!("{:?}", res.into_json::<serde_json::Value>().unwrap());
 
         // home_timeline
         let url = "https://api.twitter.com/1.1/statuses/home_timeline.json";
