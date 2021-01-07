@@ -1,172 +1,140 @@
-use twapi_oauth::{oauth1_authorization_header};
-use ureq::{Response, Error};
+use twapi_oauth::oauth1_authorization_header;
+use ureq::{Error, Response};
 
-pub fn get(
-    url: &str,
-    query_options: &Vec<(&str, &str)>,
-    consumer_key: &str,
-    consumer_secret: &str,
-    access_key: &str,
-    access_secret: &str,
-) -> Result<Response, Error> {
-    let authorization = oauth1_authorization_header(
-        consumer_key,
-        consumer_secret,
-        access_key,
-        access_secret,
-        "GET",
-        url,
-        &query_options,
-    );
-    crate::raw::get(url, query_options, &authorization)
+pub struct Client {
+    consumer_key: String,
+    consumer_secret: String,
+    access_key: String,
+    access_secret: String,
 }
 
-pub fn post(
-    url: &str,
-    query_options: &Vec<(&str, &str)>,
-    form_options: &Vec<(&str, &str)>,
-    consumer_key: &str,
-    consumer_secret: &str,
-    access_key: &str,
-    access_secret: &str,
-) -> Result<Response, Error> {
-    let mut merged_options = query_options.clone();
-    for option in form_options {
-        merged_options.push(*option);
+impl Client {
+    pub fn new(
+        consumer_key: &str,
+        consumer_secret: &str,
+        access_key: &str,
+        access_secret: &str,
+    ) -> Self {
+        Self {
+            consumer_key: consumer_key.to_owned(),
+            consumer_secret: consumer_secret.to_owned(),
+            access_key: access_key.to_owned(),
+            access_secret: access_secret.to_owned(),
+        }
     }
-    let authorization = oauth1_authorization_header(
-        consumer_key,
-        consumer_secret,
-        access_key,
-        access_secret,
-        "POST",
-        url,
-        &merged_options,
-    );
-    crate::raw::post(url, query_options, form_options, &authorization)
-}
 
-pub fn json(
-    url: &str,
-    query_options: &Vec<(&str, &str)>,
-    data: serde_json::Value,
-    consumer_key: &str,
-    consumer_secret: &str,
-    access_key: &str,
-    access_secret: &str,
-) -> Result<Response, Error> {
-    let authorization = oauth1_authorization_header(
-        consumer_key,
-        consumer_secret,
-        access_key,
-        access_secret,
-        "POST",
-        url,
-        &query_options,
-    );
-    crate::raw::json(url, query_options, data, &authorization)
-}
+    pub fn new_by_env() -> Result<Self, std::env::VarError> {
+        Ok(Self {
+            consumer_key: std::env::var("CONSUMER_KEY")?,
+            consumer_secret: std::env::var("CONSUMER_SECRET")?,
+            access_key: std::env::var("ACCESS_KEY")?,
+            access_secret: std::env::var("ACCESS_SECRET")?,
+        })
+    }
 
-pub fn put(
-    url: &str,
-    query_options: &Vec<(&str, &str)>,
-    consumer_key: &str,
-    consumer_secret: &str,
-    access_key: &str,
-    access_secret: &str,
-) -> Result<Response, Error> {
-    let authorization = oauth1_authorization_header(
-        consumer_key,
-        consumer_secret,
-        access_key,
-        access_secret,
-        "PUT",
-        url,
-        &query_options,
-    );
-    crate::raw::put(url, query_options, &authorization)
-}
+    fn calc_oauth(&self, method: &str, url: &str, query_options: &Vec<(&str, &str)>) -> String {
+        oauth1_authorization_header(
+            &self.consumer_key,
+            &self.consumer_secret,
+            &self.access_key,
+            &self.access_secret,
+            method,
+            url,
+            &query_options,
+        )
+    }
 
-pub fn delete(
-    url: &str,
-    query_options: &Vec<(&str, &str)>,
-    consumer_key: &str,
-    consumer_secret: &str,
-    access_key: &str,
-    access_secret: &str,
-) -> Result<Response, Error> {
-    let authorization = oauth1_authorization_header(
-        consumer_key,
-        consumer_secret,
-        access_key,
-        access_secret,
-        "DELETE",
-        url,
-        &query_options,
-    );
-    crate::raw::delete(url, query_options, &authorization)
-}
+    pub fn get(&self, url: &str, query_options: &Vec<(&str, &str)>) -> Result<Response, Error> {
+        crate::raw::get(
+            url,
+            query_options,
+            &self.calc_oauth("GET", url, &query_options),
+        )
+    }
 
-pub fn multipart(
-    url: &str,
-    query_options: &Vec<(&str, &str)>,
-    data: crate::form::MultiPart,
-    consumer_key: &str,
-    consumer_secret: &str,
-    access_key: &str,
-    access_secret: &str,
-) -> Result<Response, Error> {
-    let authorization = oauth1_authorization_header(
-        consumer_key,
-        consumer_secret,
-        access_key,
-        access_secret,
-        "POST",
-        url,
-        &query_options,
-    );
-    crate::raw::multipart(url, query_options, data, &authorization)
+    pub fn post(
+        &self,
+        url: &str,
+        query_options: &Vec<(&str, &str)>,
+        form_options: &Vec<(&str, &str)>,
+    ) -> Result<Response, Error> {
+        let mut merged_options = query_options.clone();
+        for option in form_options {
+            merged_options.push(*option);
+        }
+        crate::raw::post(
+            url,
+            query_options,
+            form_options,
+            &self.calc_oauth("POST", url, &merged_options),
+        )
+    }
+
+    pub fn json(
+        &self,
+        url: &str,
+        query_options: &Vec<(&str, &str)>,
+        data: serde_json::Value,
+    ) -> Result<Response, Error> {
+        crate::raw::json(
+            url,
+            query_options,
+            data,
+            &self.calc_oauth("POST", url, &query_options),
+        )
+    }
+
+    pub fn put(&self, url: &str, query_options: &Vec<(&str, &str)>) -> Result<Response, Error> {
+        crate::raw::put(
+            url,
+            query_options,
+            &self.calc_oauth("PUT", url, &query_options),
+        )
+    }
+
+    pub fn delete(&self, url: &str, query_options: &Vec<(&str, &str)>) -> Result<Response, Error> {
+        crate::raw::delete(
+            url,
+            query_options,
+            &self.calc_oauth("DELETE", url, &query_options),
+        )
+    }
+
+    pub fn multipart(
+        &self,
+        url: &str,
+        query_options: &Vec<(&str, &str)>,
+        data: crate::form::MultiPart,
+    ) -> Result<Response, Error> {
+        crate::raw::multipart(
+            url,
+            query_options,
+            data,
+            &self.calc_oauth("POST", url, &query_options),
+        )
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::*;
-    use std::env;
+    use crate::{form, v1::Client};
     use std::io::{BufReader, Cursor, Read};
 
     #[test]
     fn test_api() {
-        let consumer_key = env::var("CONSUMER_KEY").unwrap();
-        let consumer_secret = env::var("CONSUMER_SECRET").unwrap();
-        let access_key = env::var("ACCESS_KEY").unwrap();
-        let access_secret = env::var("ACCESS_SECRET").unwrap();
+        let client = Client::new_by_env().unwrap();
 
         // search
         let url = "https://api.twitter.com/1.1/search/tweets.json";
         let query_options = vec![("q", "*abc"), ("count", "2")];
-        let res = v1::get(
-            url,
-            &query_options,
-            &consumer_key,
-            &consumer_secret,
-            &access_key,
-            &access_secret,
-        );
+        let res = client.get(url, &query_options).unwrap();
         println!("{:?}", res.into_json::<serde_json::Value>().unwrap());
 
         // home_timeline
         let url = "https://api.twitter.com/1.1/statuses/home_timeline.json";
         let query_options = vec![("count", "2")];
-        let res = v1::get(
-            url,
-            &query_options,
-            &consumer_key,
-            &consumer_secret,
-            &access_key,
-            &access_secret,
-        );
-        println!("{:?}", res.into_json());
-
+        let res = client.get(url, &query_options).unwrap();
+        println!("{:?}", res.into_json::<serde_json::Value>());
 
         // statuses/update
         let url = "https://api.twitter.com/1.1/statuses/update.json";
@@ -174,16 +142,8 @@ mod tests {
             ("status", "!\"'#$%&\\()+,/:;<=>?@[\\]^`{|}~;-._* 全部"),
             ("in_reply_to_status_id", "1178811297455935488"),
         ];
-        let res = v1::post(
-            url,
-            &vec![],
-            &form_options,
-            &consumer_key,
-            &consumer_secret,
-            &access_key,
-            &access_secret,
-        );
-        println!("{:?}", res.into_json());
+        let res = client.post(url, &vec![], &form_options).unwrap();
+        println!("{:?}", res.into_json::<serde_json::Value>());
 
         // direct_messages new
         let url = "https://api.twitter.com/1.1/direct_messages/events/new.json";
@@ -201,16 +161,8 @@ mod tests {
                     }
                 }"#;
         let data: serde_json::Value = serde_json::from_str(data).unwrap();
-        let res = v1::json(
-            url,
-            &vec![],
-            data,
-            &consumer_key,
-            &consumer_secret,
-            &access_key,
-            &access_secret,
-        );
-        println!("{:?}", res.into_json());
+        let res = client.json(url, &vec![], data).unwrap();
+        println!("{:?}", res.into_json::<serde_json::Value>());
 
         // media/upload
         let metadata = std::fs::metadata("test.jpg").unwrap();
@@ -224,15 +176,7 @@ mod tests {
         data.add_cursor("media", cursor);
 
         let url = "https://upload.twitter.com/1.1/media/upload.json";
-        let res = v1::multipart(
-            url,
-            &vec![],
-            data,
-            &consumer_key,
-            &consumer_secret,
-            &access_key,
-            &access_secret,
-        );
-        println!("{:?}", res.into_json());
+        let res = client.multipart(url, &vec![], data).unwrap();
+        println!("{:?}", res.into_json::<serde_json::Value>());
     }
 }

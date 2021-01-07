@@ -1,4 +1,4 @@
-use ureq::{Request, Response, Error};
+use ureq::{Error, Request, Response};
 
 use twapi_oauth::encode;
 
@@ -13,7 +13,11 @@ fn make_query(list: &Vec<(&str, &str)>, separator: &str) -> String {
     result
 }
 
-pub(crate) fn get(url: &str, query_options: &Vec<(&str, &str)>, authorization: &str) -> Result<Response, Error> {
+pub(crate) fn get(
+    url: &str,
+    query_options: &Vec<(&str, &str)>,
+    authorization: &str,
+) -> Result<Response, Error> {
     let url = if query_options.len() > 0 {
         format!("{}?{}", url, make_query(query_options, "&"))
     } else {
@@ -28,12 +32,10 @@ pub(crate) fn post(
     form_options: &Vec<(&str, &str)>,
     authorization: &str,
 ) -> Result<Response, Error> {
-    let request = ureq::post(url)
-        .set("Authorization", authorization)
-        .set(
-            "Content-Type",
-            "application/x-www-form-urlencoded;charset=UTF-8",
-        );
+    let request = ureq::post(url).set("Authorization", authorization).set(
+        "Content-Type",
+        "application/x-www-form-urlencoded;charset=UTF-8",
+    );
     apply_query_options(request, query_options).send_string(&make_body(form_options))
 }
 
@@ -49,14 +51,21 @@ pub(crate) fn json(
     apply_query_options(request, query_options).send_json(data)
 }
 
-pub(crate) fn put(url: &str, query_options: &Vec<(&str, &str)>, authorization: &str) -> Result<Response, Error> {
+pub(crate) fn put(
+    url: &str,
+    query_options: &Vec<(&str, &str)>,
+    authorization: &str,
+) -> Result<Response, Error> {
     let request = ureq::put(url).set("Authorization", authorization);
     apply_query_options(request, query_options).call()
 }
 
-pub(crate) fn delete(url: &str, query_options: &Vec<(&str, &str)>, authorization: &str) -> Result<Response, Error> {
-    let request = ureq::delete(url)
-        .set("Authorization", authorization);
+pub(crate) fn delete(
+    url: &str,
+    query_options: &Vec<(&str, &str)>,
+    authorization: &str,
+) -> Result<Response, Error> {
+    let request = ureq::delete(url).set("Authorization", authorization);
     apply_query_options(request, query_options).call()
 }
 
@@ -66,12 +75,10 @@ pub(crate) fn multipart(
     mut data: crate::form::MultiPart,
     authorization: &str,
 ) -> Result<Response, Error> {
-    let request = ureq::post(url)
-        .set("Authorization", authorization)
-        .set(
-            "Content-Type",
-            &format!("multipart/form-data; boundary={}", data.boundary),
-        );
+    let request = ureq::post(url).set("Authorization", authorization).set(
+        "Content-Type",
+        &format!("multipart/form-data; boundary={}", data.boundary),
+    );
     apply_query_options(request, query_options).send_bytes(&data.to_bytes())
 }
 

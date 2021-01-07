@@ -15,41 +15,35 @@ Twitter OAuth library used by ureq.
 ## Example
 ```rust
 use twapi_ureq::*;
-use std::env;
 use std::io::{BufReader, Cursor, Read};
 
 fn main() {
+    // Set up Environment Variables
+    // CONSUMER_KEY
+    // CONSUMER_SECRET
+    // ACCESS_KEY
+    // ACCESS_SECRET
+
     // OAuth2.0 Authentication
-    let consumer_key = env::var("CONSUMER_KEY").unwrap();
-    let consumer_secret = env::var("CONSUMER_SECRET").unwrap();
-    let bearer_token = oauth::get_bearer_token(&consumer_key, &consumer_secret).unwrap();
+    let client = v2::Client::new_by_env().unwrap().unwrap();
 
     // search(Application Only Authentication)
-    let res = v2::get(
-        "https://api.twitter.com/1.1/search/tweets.json",
-        &vec![("q", "東京&埼玉"), ("count", "2")],
-        &bearer_token,
-    );
-    println!("{:?}", res.into_json());
+    let res = client
+        .get(
+            "https://api.twitter.com/1.1/search/tweets.json",
+            &vec![("q", "東京&埼玉"), ("count", "2")],
+        )
+        .unwrap();
+    println!("{:?}", res.into_json::<serde_json::Value>());
 
     // OAuth1.0 Authentication
-    let consumer_key = env::var("CONSUMER_KEY").unwrap();
-    let consumer_secret = env::var("CONSUMER_SECRET").unwrap();
-    let access_key = env::var("ACCESS_KEY").unwrap();
-    let access_secret = env::var("ACCESS_SECRET").unwrap();
+    let client = v1::Client::new_by_env().unwrap();
 
     // home_timeline
     let url = "https://api.twitter.com/1.1/statuses/home_timeline.json";
     let query_options = vec![("count", "2")];
-    let res = v1::get(
-        url,
-        &query_options,
-        &consumer_key,
-        &consumer_secret,
-        &access_key,
-        &access_secret,
-    );
-    println!("{:?}", res.into_json());
+    let res = client.get(url, &query_options).unwrap();
+    println!("{:?}", res.into_json::<serde_json::Value>().unwrap());
 
     // statuses/update
     let url = "https://api.twitter.com/1.1/statuses/update.json";
@@ -57,16 +51,8 @@ fn main() {
         ("status", "!\"'#$%&\\()+,/:;<=>?@[\\]^`{|}~;-._* 全部"),
         ("in_reply_to_status_id", "1178811297455935488"),
     ];
-    let res = v1::post(
-        url,
-        &vec![],
-        &form_options,
-        &consumer_key,
-        &consumer_secret,
-        &access_key,
-        &access_secret,
-    );
-    println!("{:?}", res.into_json());
+    let res = client.post(url, &vec![], &form_options).unwrap();
+    println!("{:?}", res.into_json::<serde_json::Value>());
 
     // direct_messages new(JSON support)
     let url = "https://api.twitter.com/1.1/direct_messages/events/new.json";
@@ -84,16 +70,8 @@ fn main() {
                 }
             }"#;
     let data: serde_json::Value = serde_json::from_str(data).unwrap();
-    let res = v1::json(
-        url,
-        &vec![],
-        data,
-        &consumer_key,
-        &consumer_secret,
-        &access_key,
-        &access_secret,
-    );
-    println!("{:?}", res.into_json());
+    let res = client.json(url, &vec![], data).unwrap();
+    println!("{:?}", res.into_json::<serde_json::Value>());
 
     // media/upload(Multipart support)
     let metadata = std::fs::metadata("test.jpg").unwrap();
@@ -107,15 +85,7 @@ fn main() {
     data.add_cursor("media", cursor);
 
     let url = "https://upload.twitter.com/1.1/media/upload.json";
-    let res = v1::multipart(
-        url,
-        &vec![],
-        data,
-        &consumer_key,
-        &consumer_secret,
-        &access_key,
-        &access_secret,
-    );
-    println!("{:?}", res.into_json());
+    let res = client.multipart(url, &vec![], data).unwrap();
+    println!("{:?}", res.into_json::<serde_json::Value>());
 }
 ```

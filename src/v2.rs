@@ -1,76 +1,82 @@
-use twapi_oauth::{oauth2_authorization_header};
-use ureq::{Response, Error};
+use twapi_oauth::oauth2_authorization_header;
+use ureq::{Error, Response};
 
-pub fn get(url: &str, query_options: &Vec<(&str, &str)>, bearer_token: &str) -> Result<Response, Error> {
-    let authorization = oauth2_authorization_header(bearer_token);
-    crate::raw::get(url, query_options, &authorization)
+pub struct Client {
+    bearer_token: String,
 }
 
-pub fn post(
-    url: &str,
-    query_options: &Vec<(&str, &str)>,
-    form_options: &Vec<(&str, &str)>,
-    bearer_token: &str,
-) -> Result<Response, Error> {
-    let authorization = oauth2_authorization_header(bearer_token);
-    crate::raw::post(url, query_options, form_options, &authorization)
-}
+impl Client {
+    pub fn new(consumer_key: &str, consumer_secret: &str) -> Option<Self> {
+        crate::oauth::get_bearer_token(&consumer_key, &consumer_secret)
+            .map(|bearer_token| Self { bearer_token })
+    }
 
-pub fn json(
-    url: &str,
-    query_options: &Vec<(&str, &str)>,
-    data: serde_json::Value,
-    bearer_token: &str,
-) -> Result<Response, Error> {
-    let authorization = oauth2_authorization_header(bearer_token);
-    crate::raw::json(url, query_options, data, &authorization)
-}
+    pub fn new_by_env() -> Result<Option<Self>, std::env::VarError> {
+        Ok(Self::new(
+            &std::env::var("CONSUMER_KEY")?,
+            &std::env::var("CONSUMER_SECRET")?,
+        ))
+    }
 
-pub fn put(
-    url: &str,
-    query_options: &Vec<(&str, &str)>,
-    bearer_token: &str,
-) -> Result<Response, Error> {
-    let authorization = oauth2_authorization_header(bearer_token);
-    crate::raw::put(url, query_options, &authorization)
-}
+    fn make_header(&self) -> String {
+        oauth2_authorization_header(&self.bearer_token)
+    }
 
-pub fn delete(
-    url: &str,
-    query_options: &Vec<(&str, &str)>,
-    bearer_token: &str,
-) -> Result<Response, Error> {
-    let authorization = oauth2_authorization_header(bearer_token);
-    crate::raw::delete(url, query_options, &authorization)
-}
+    pub fn get(&self, url: &str, query_options: &Vec<(&str, &str)>) -> Result<Response, Error> {
+        crate::raw::get(url, query_options, &self.make_header())
+    }
 
-pub fn multipart(
-    url: &str,
-    query_options: &Vec<(&str, &str)>,
-    data: crate::form::MultiPart,
-    bearer_token: &str,
-) -> Result<Response, Error> {
-    let authorization = oauth2_authorization_header(bearer_token);
-    crate::raw::multipart(url, query_options, data, &authorization)
+    pub fn post(
+        &self,
+        url: &str,
+        query_options: &Vec<(&str, &str)>,
+        form_options: &Vec<(&str, &str)>,
+    ) -> Result<Response, Error> {
+        crate::raw::post(url, query_options, form_options, &self.make_header())
+    }
+
+    pub fn json(
+        &self,
+        url: &str,
+        query_options: &Vec<(&str, &str)>,
+        data: serde_json::Value,
+    ) -> Result<Response, Error> {
+        crate::raw::json(url, query_options, data, &self.make_header())
+    }
+
+    pub fn put(&self, url: &str, query_options: &Vec<(&str, &str)>) -> Result<Response, Error> {
+        crate::raw::put(url, query_options, &self.make_header())
+    }
+
+    pub fn delete(&self, url: &str, query_options: &Vec<(&str, &str)>) -> Result<Response, Error> {
+        crate::raw::delete(url, query_options, &self.make_header())
+    }
+
+    pub fn multipart(
+        &self,
+        url: &str,
+        query_options: &Vec<(&str, &str)>,
+        data: crate::form::MultiPart,
+    ) -> Result<Response, Error> {
+        crate::raw::multipart(url, query_options, data, &self.make_header())
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::*;
-    use std::env;
+    use crate::v2::Client;
 
     #[test]
     fn test_api() {
-        let consumer_key = env::var("CONSUMER_KEY").unwrap();
-        let consumer_secret = env::var("CONSUMER_SECRET").unwrap();
-        let bearer_token = oauth::get_bearer_token(&consumer_key, &consumer_secret).unwrap();
+        let client = Client::new_by_env().unwrap().unwrap();
 
         // search
-        let res = v2::get(
-            "https://api.twitter.com/1.1/search/tweets.json",
-            &vec![("q", "東京&埼玉"), ("count", "2")],
-            &bearer_token,
-        );
+        let res = client
+            .get(
+                "https://api.twitter.com/1.1/search/tweets.json",
+                &vec![("q", "東京&埼玉"), ("count", "2")],
+            )
+            .unwrap();
         println!("{:?}", res.into_json::<serde_json::Value>());
     }
 }

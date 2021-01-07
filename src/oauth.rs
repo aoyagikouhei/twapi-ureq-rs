@@ -1,8 +1,11 @@
 use std::collections::HashMap;
-use twapi_oauth::{calc_oauth_header};
-use ureq::{Response, Error};
+use twapi_oauth::calc_oauth_header;
+use ureq::{Error, Response};
 
-pub fn get_bearer_token_response(consumer_key: &str, consumer_secret: &str) -> Result<Response, Error> {
+pub fn get_bearer_token_response(
+    consumer_key: &str,
+    consumer_secret: &str,
+) -> Result<Response, Error> {
     let key = base64::encode(&format!("{}:{}", consumer_key, consumer_secret));
     ureq::post("https://api.twitter.com/oauth2/token")
         .set(
@@ -14,15 +17,13 @@ pub fn get_bearer_token_response(consumer_key: &str, consumer_secret: &str) -> R
 }
 
 pub fn get_bearer_token(consumer_key: &str, consumer_secret: &str) -> Option<String> {
-    match  get_bearer_token_response(consumer_key, consumer_secret) {
-        Ok(response) => {
-            match response.into_json::<serde_json::Value>() {
-                Ok(json) => match json["access_token"].as_str() {
-                    Some(access_token) => Some(access_token.to_string()),
-                    None => None,
-                },
-                Err(_) => None,
-            }
+    match get_bearer_token_response(consumer_key, consumer_secret) {
+        Ok(response) => match response.into_json::<serde_json::Value>() {
+            Ok(json) => match json["access_token"].as_str() {
+                Some(access_token) => Some(access_token.to_string()),
+                None => None,
+            },
+            Err(_) => None,
         },
         Err(_) => None,
     }
@@ -58,7 +59,12 @@ pub fn request_token(
     oauth_callback: &str,
     x_auth_access_type: Option<&str>,
 ) -> Result<HashMap<String, String>, Error> {
-    let response = request_token_response(consumer_key, consumer_secret, oauth_callback, x_auth_access_type)?;
+    let response = request_token_response(
+        consumer_key,
+        consumer_secret,
+        oauth_callback,
+        x_auth_access_type,
+    )?;
     Ok(parse_oauth_body(response))
 }
 
@@ -93,7 +99,13 @@ pub fn access_token(
     oauth_token_secret: &str,
     oauth_verifier: &str,
 ) -> Result<HashMap<String, String>, Error> {
-    let response = access_token_response(consumer_key, consumer_secret, oauth_token, oauth_token_secret, oauth_verifier)?;
+    let response = access_token_response(
+        consumer_key,
+        consumer_secret,
+        oauth_token,
+        oauth_token_secret,
+        oauth_verifier,
+    )?;
     Ok(parse_oauth_body(response))
 }
 
